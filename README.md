@@ -2,7 +2,7 @@
 
 
 
-# NLP FROM SCRATCH: TRANSLATION WITH A SEQUENCE TO SEQUENCE NETWORK AND ATTENTION
+# NLP From Scratch: Translation With A Sequence To Sequence Network And Attention
 
 > by Krishna N Revi 
 
