@@ -1,7 +1,3 @@
-
-
-
-
 # NLP From Scratch: Translation With A Sequence To Sequence Network And Attention
 
 > by Krishna N Revi 
@@ -20,113 +16,111 @@
 
 ## Solution 💡
 
-Please refer to complete solution  [here](https://github.com/krishnarevi/TSAI_Class_-notes/blob/main/NLP_FROM_SCRATCH_TRANSLATION_WITH_A_SEQUENCE_TO_SEQUENCE_NETWORK_AND_ATTENTION.ipynb)
+Please refer to complete solution  [here](https://github.com/krishnarevi/TSAI_END2.0_Session11/blob/main/NLP%20From%20Scratch%20Translation%20With%20A%20Sequence%20To%20Sequence%20Network%20And%20Attention.ipynb)
 
-#### What are Pretrained Word Embeddings?
+### Task 
 
-*Pretrained Word Embeddings are the embeddings learned in one task that are used for solving another similar task.*
+In this task we will be teaching a neural network to translate from French to English.
 
-These embeddings are trained on large datasets, saved, and then used for solving other tasks. That’s why pretrained word embeddings are a form of **Transfer Learning. **Transfer learning, as the name suggests, is about transferring the learnings of one task to another. Learnings could be either weights or embeddings. In our case here, learnings are the embeddings. Hence, this concept is known as pretrained word embeddings.
+```
+[KEY: > input, = target, < output]
 
-#### Why do we need Pretrained Word Embeddings?
+> il est en train de peindre un tableau .
+= he is painting a picture .
+< he is painting a picture .
 
-Pretrained word embeddings capture the semantic and syntactic meaning of a word as they are trained on large datasets. They are capable of boosting the performance of a Natural Language Processing model. 
+> pourquoi ne pas essayer ce vin delicieux ?
+= why not try that delicious wine ?
+< why not try that delicious wine ?
 
-Learning word embeddings from scratch is a challenging problem due to two primary reasons:
+> elle n est pas poete mais romanciere .
+= she is not a poet but a novelist .
+< she not not a poet but a novelist .
 
-- Sparsity of training data
-- Large number of trainable parameters
+> vous etes trop maigre .
+= you re too skinny .
+< you re all alone .
+```
 
-We can broadly divide the embeddings into 2 classes: **Word-level and Character-level embeddings**.
+This is made possible by the simple but powerful idea of the [sequence to sequence network](https://arxiv.org/abs/1409.3215), in which two recurrent neural networks work together to transform one sequence to another. An encoder network condenses an input sequence into a vector, and a decoder network unfolds that vector into a new sequence.
 
- ELMo and Flair embeddings are examples of Character-level embeddings. Here, we are going to use a popular word-level pretrained word embedding -Stanford’s GloVe. Google's Word2Vec is another popular word-level pretrained word embedding
+![image-20210724210617417](README.assets/seq2seq.PNG)
 
-Let’s understand the working of  GloVe.
+### Steps
 
-#### Brief Introduction to GloVe: Global Vectors for Word Representation
+**Data loading and preprocessing** 
 
-GloVe is an unsupervised learning algorithm for obtaining vector representations for words. Training is performed on aggregated global word-word co-occurrence statistics from a corpus, and the resulting representations showcase interesting linear substructures of the word vector space. Simply put, GloVe allows us to take a corpus of text, and intuitively transform each word in that corpus into a position in a high-dimensional space. This means that similar words will be placed together.
+We download French - English translation pair dataset from Pytorch official website [https://download.pytorch.org/tutorial/data.zip.](https://download.pytorch.org/tutorial/data.zip.)  Original dataset has 135842 sentence pairs. We trim dataset for easier training into 10599 sentence pairs . Final dataset has  4345 unique French words and  2803 unique English words. Sample data looks as follows :
 
-The GloVe model is trained on the non-zero entries of a global word-word co-occurrence matrix, which tabulates how frequently words co-occur with one another in a given corpus. Populating this matrix requires a single pass through the entire corpus to collect the statistics. For large corpora, this pass can be computationally expensive, but it is a one-time up-front cost. Subsequent training iterations are much faster because the number of non-zero matrix entries is typically much smaller than the total number of words in the corpus.
+![image-20210724211641099](README.assets/sample_data.PNG)
 
-The statistics of word occurrences in a corpus is the primary source of information available to all unsupervised methods for learning word representations, and although many such methods now exist, the question still remains as to how meaning is generated from these statistics, and how the resulting word vectors might represent that meaning.
+**The architecture we are building**
 
-GloVe observes that ratios of word-word co-occurrence probabilities have the potential for encoding some form of meaning. Take the example from StanfordNLP ([Global Vectors for Word Representation](https://nlp.stanford.edu/projects/glove/)), to consider the co-occurrence probabilities for target words ***ice\*** and ***steam\*** with various probe words from the vocabulary:
+![model_architecture](README.assets/model_architecture.jpeg)
 
-· As one might expect, ***ice\*** co-occurs more frequently with ***solid\*** than it does with ***gas\***, whereas ***steam\*** co-occurs more frequently with ***gas\*** than it does with ***solid\***.
+As we can see here, we will have an encoder, an attention mechanism block and decoder. In the final code the attention mechanism block and decoder will be merged into single block as we need both to work together.
 
-· Both words co-occur with their shared property ***water\*** frequently, and both co-occur with the unrelated word ***fashion\*** infrequently.
+As we can see here, we need to create a copy of h1, h2, h3 and h4. These are encoder outputs for a sentence with 4 words.
 
-Only in the ratio of probabilities does noise from non-discriminative words like ***water\*** and ***fashion\*** cancel out, so that large values (much greater than 1) correlate well with properties specific to ***ice\***, and small values (much less than 1) correlate well with properties specific of ***steam\***.
+**Encoder**
 
+We will build our encoder with a LSTM. 
 
+We can't feed our input directly to LSTM, we need to tensorize it, convert to embeddings first.
 
-#### Comparison Seq2seq language translation model with and without Glove 
+We will start from a sample sentence pair from our dataset
 
-Here we would use Glove Word Embeddings, which has 40,000 words and available in 50,100,200,300 dimensions. We'll be using the "glove.6B.100d" vectors. 6B indicates these vectors were trained on 6 billion tokens and 100d indicates these vectors are 100-dimensional.
+```python
+sample = random.choice(pairs)
+sample
+```
 
-Before we load the vectors in code, we have to understand how the glove text file is formatted.
-Each line of the text file contains a word, followed by *N* numbers. The *N* numbers describe the vector of the word’s position. *N* may vary depending on which vectors you downloaded, in case of  *glove.6B.100d.*, *N* is 100, 
+*sample = ['je ne vais pas jouer a ce jeu .', 'i m not going to play this game .']*
 
-Here is an example line from the text file, shortened to the first ten dimensions:
+Before feeding into encoder embedding layer, we will tokenize input sentence, convert into indices , append <EOS> token and convert into tensors.
 
-![glove_sample](README.assets/glove_sample.PNG)
+```python
+input_sentence = sample[0]
+output_sentence = sample[1]
+input_indices = [input_lang.word2index[x] for x in input_sentence.split(' ')]
+output_indices = [output_lang.word2index[x] for x in output_sentence.split(' ')]
+input_indices.append(EOS_token)
+output_indices.append(EOS_token)
+input_tensor =torch.tensor(input_indices,dtype=torch.long ,device=device)
+output_tensor = torch.tensor(output_indices,dtype=torch.long,device=device)
+```
 
-#### Training logs and Loss
+*input_tensor = (tensor([   6,  297,    7,  246, 2194,  115,  528, 2568,    5,    1],        device='cuda:0'),* 
 
-Without glove embedding							With glove embedding
+*output_tensor =tensor([   2,    3,  147,   61,  532, 2070,  797, 1519,    4,    1],        device='cuda:0'))*
 
-<img src="README.assets/train_log_1.PNG" alt="train_log_1" style="zoom: 80%;" /><img src="README.assets/log2.PNG" alt="log2" style="zoom:80%;" />
+Let's build our encoder now .The encoder of a seq2seq network is a LSTM that outputs some value for every word from the input sentence. For every input word the encoder outputs a output vector , a hidden state and cell state .Encoder uses the hidden state and cell state for the next input word.
 
-<img src="README.assets/loss_1.PNG" alt="loss_1" style="zoom:80%;" /><img src="README.assets/loss2.PNG" alt="loss2" style="zoom:80%;" />
+First we will initialize  encoder hidden state and encoder cell state with zero tensor . All we need finally is the list of outputs. Let's create an empty tensor to store them as well. 
 
-Here both models have gradually decreasing loss value which is good . Theoretically usage of pretrained models should decrease train time and loss value . But here we can observe that model without pre trained glove embeddings trains faster . Also, loss value for model with glove embeddings is bigger than that of without glove embedding.  We can see that somewhat surprisingly, the glove word embeddings was not beneficial for training
+When we use encoder class from Pytorch it will internally handle for loop for us , but here as we are writing from scratch we need to define for loop explicitly to loop through multiple words in our input sentence .
 
-#### Sample predictions from model without glove embedding
+```python
 
-<img src="README.assets/predictions_1.PNG" alt="predictions_1"  />
-
-#### Sample predictions from model with glove embedding
-
-<img src="README.assets/predictions2.PNG" alt="predictions2"  />
-
-
-
-#### Visualize attentions for different predictions
-
-##### Sample 1
-
-Input : i m really proud of this
-
-Actual output :j en suis vrariment fier 
-
-
-
-<img src="README.assets/da1a.PNG" alt="da1a" style="zoom:80%;" /><img src="README.assets/da21.PNG" alt="da21" style="zoom:80%;" />
-
-##### Sample 2
-
-Input : They are out shopping 
-
-Actual output : Ils sont faire les magasins
-
-<img src="README.assets/da1b.PNG" alt="da1b" style="zoom:80%;" /><img src="README.assets/da22.PNG" alt="da22" style="zoom:80%;" />
-
-##### Sample 3
-
-Input : He is an intelligent boy
-
-Actual output : c est un garcon intelligent 
-
-<img src="README.assets/da1c.PNG" alt="da1c" style="zoom:80%;" /><img src="README.assets/da23.PNG" alt="da23" style="zoom:80%;" />
+encoder_hidden,encoder_cell = torch.zeros((1,1,256),device=device), torch.zeros((1,1,256),device=device) # initialize encoder hidden and cell state with zero tensor
+encoder_outputs = torch.zeros(MAX_LENGTH, 256, device=device)
 
 
+for i in range(input_tensor.shape[0]) :
+    embedded_input = embedding(input_tensor[i].view(-1, 1))
+    output, (encoder_hidden,encoder_cell) = lstm(embedded_input, (encoder_hidden,encoder_cell))
+    encoder_outputs[i] += output[0,0]
 
-When we cross check predictions made by both models , predictions are not completely random . Both models give decent predictions . Still model without glove embeddings are giving more accurate translations compared to the other.
+    print('\033[1m' +"Time step {}  \033[0m".format(i))
+    if (i<input_tensor.shape[0]-1):
+      print('Actual input word = {}'.format(input_sentence.split(" ")[i]))
+    else:
+      print('Actual input word = {}'.format("<EOS>"))
+    print('Embedding of input word {} = {}'.format(i, output[0,0]))
+    print('Encoder output at this time step = {}'.format(output[0,0]))
 
-#### Why performance not improving ??
+```
 
-Pre-trained word embeddings have proven to be highly useful in neural network models for NLP tasks such as [sequence tagging](https://arxiv.org/abs/1409.0473) (Lample et al., 2016; Ma and Hovy, 2016) and [text classification](https://arxiv.org/abs/1408.5882) (Kim, 2014). However, it is much less common to use such pre-training in [NMT](https://arxiv.org/abs/1609.08144) (Wu et al., 2016), largely because the large-scale training corpora used for tasks such as WMT2 tend to be several orders of magnitude larger than the annotated data available for other tasks, such as the [Penn Treebank](https://www.researchgate.net/publication/220017637_Building_a_Large_Annotated_Corpus_of_English_The_Penn_Treebank) (Marcus et al., 1993).
+Next let's build out Decoder where we have attention in-built.
 
-In [this](https://arxiv.org/pdf/1804.06323.pdf) paper they conduct a set of experiments, where they examine the efficacy of pre-trained word embeddings across the various languages in their corpus. Their conclusions have practical effects on the recommendations for when and why pretrained embeddings may be effective in NMT, particularly in low-resource scenarios: (1) there is a sweet-spot where word embeddings are most effective, where there is very little training data but not so little that the system cannot be trained at all, (2) pre-trained embeddings seem to be more effective for more similar translation pairs, (3) a priori alignment of embeddings may not be necessary in bilingual scenarios, but is helpful in multi-lingual training scenarios.
-
+**Decoder**
