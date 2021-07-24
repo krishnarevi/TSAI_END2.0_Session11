@@ -2,23 +2,25 @@
 
 
 
-# Translation With a Sequence to Sequence Network and Attention
+# NLP FROM SCRATCH: TRANSLATION WITH A SEQUENCE TO SEQUENCE NETWORK AND ATTENTION
 
 > by Krishna N Revi 
 
 ## Assignment ❔
 
-1. Replace the embeddings of this session's code with GloVe embeddings
-2. Compare your results with this session's code. 
-3. Upload to a public GitHub repo and proceed to Session 10 Assignment Solutions where these questions are asked: 
-   1. Share the link to your README file's public repo for this assignment. Expecting a minimum 500-word write-up on your learnings. Expecting you to compare your results with the code covered in the class. - 750 Points
-   2. Share the link to your main notebook with training logs - 250 Points
+1. Follow the similar strategy as we did in our [baby-steps-code (Links to an external site.)](https://colab.research.google.com/drive/1IlorkvXhZgmd_sayOVx4bC_I5Qpdzxk_?usp=sharing), but replace GRU with LSTM. In your code you must:
+   1. Perform 1 full feed forward step for the encoder **manually**
+   2. Perform 1 full feed forward step for the decoder **manually**.
+   3. You can use any of the 3 attention mechanisms that we discussed. 
+2. Explain your steps in the readme file and
+3. Submit the assignment asking for these things:
+   1. Link to the readme file that must explain Encoder/Decoder Feed-forward manual steps **and the attention mechanism that you have used** - 500 pts
+   2. Copy-paste (don't redirect to github), the Encoder Feed Forward steps for 2 words - 250 pts
+   3. Copy-paste (don't redirect to github), the Decoder Feed Forward steps for 2 words - 250 pts
 
 ## Solution 💡
 
-Please refer to code file without GloVe embeddings [here](https://github.com/krishnarevi/TSAI_END2.0_Session10/blob/main/Frech_to_English_NMT_without_pretrained_embedding.ipynb)
-
-Please refer to code file with GloVe embeddings [here](https://github.com/krishnarevi/TSAI_END2.0_Session10/blob/main/Frech_to_English_NMT_with_pretrained_embedding%20(2).ipynb)
+Please refer to complete solution  [here](https://github.com/krishnarevi/TSAI_Class_-notes/blob/main/NLP_FROM_SCRATCH_TRANSLATION_WITH_A_SEQUENCE_TO_SEQUENCE_NETWORK_AND_ATTENTION.ipynb)
 
 #### What are Pretrained Word Embeddings?
 
