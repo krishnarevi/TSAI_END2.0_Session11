@@ -54,7 +54,7 @@ We download French - English translation pair dataset from Pytorch official webs
 
 ![image-20210724211641099](README.assets/sample_data.PNG)
 
-#### **Model architecture **
+#### Model architecture
 
 ![model_architecture](README.assets/model_architecture.jpeg)
 
